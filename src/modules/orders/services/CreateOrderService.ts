@@ -35,29 +35,27 @@ class CreateOrderService {
       throw new AppError('Could not find any customer with the given id');
     }
 
-    const existentProducts = await this.productsRepository.findAllById(
-      products,
-    );
+    const productsExist = await this.productsRepository.findAllById(products);
 
-    if (!existentProducts.length) {
-      throw new AppError('Could not find any product with the given ids');
+    if (!productsExist.length) {
+      throw new AppError('Could not find any products with the given ids');
     }
 
-    const existentProductsIds = existentProducts.map(product => product.id);
+    const existentproductsIds = productsExist.map(product => product.id);
 
     const checkInexistentProducts = products.filter(
-      product => !existentProductsIds.includes(product.id),
+      product => !existentproductsIds.includes(product.id),
     );
 
     if (checkInexistentProducts.length) {
       throw new AppError(
-        `Could not find products ${checkInexistentProducts[0].id}`,
+        `Could not find product: ${checkInexistentProducts[0].id}`,
       );
     }
 
     const findProductsWithNoQuantityAvailable = products.filter(
       product =>
-        existentProducts.filter(p => p.id === product.id)[0].quantity <
+        productsExist.filter(p => p.id === product.id)[0].quantity <=
         product.quantity,
     );
 
@@ -70,7 +68,7 @@ class CreateOrderService {
     const serializedProducts = products.map(product => ({
       product_id: product.id,
       quantity: product.quantity,
-      price: existentProducts.filter(p => p.id === product.id)[0].price,
+      price: productsExist.filter(p => p.id === product.id)[0].price,
     }));
 
     const order = await this.ordersRepository.create({
@@ -83,7 +81,7 @@ class CreateOrderService {
     const orderedProductsQuantity = order_products.map(product => ({
       id: product.product_id,
       quantity:
-        existentProducts.filter(p => p.id === product.product_id)[0].quantity -
+        productsExist.filter(p => p.id === product.product_id)[0].quantity -
         product.quantity,
     }));
 
